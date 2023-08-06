@@ -7,19 +7,26 @@ const uploads = multer({ dest: "uploads/" });
 const fs = require("fs");
 const path = require("path");
 
-router.use(requireAuth);
 router.get("/", (req, res) => {
+  Blog.find({})
+    .sort({ createdAt: -1 })
+    .then((blogs) => res.json(blogs))
+    .catch((err) => res.status(400).json({ msg: err.message }));
+});
+
+router.get("/blog/:id", (req, res) => {
+  Blog.findById(req.params.id)
+    .then((blog) => res.json(blog))
+    .catch((err) => res.status(400).json({ msg: "Blog Not Found" }));
+});
+router.use(requireAuth);
+
+router.get("/my-blogs", (req, res) => {
   const user_id = req.user._id;
-  const filter = req.query.filter;
-  if (filter === "all") {
-    Blog.find({})
-      .then((blogs) => res.json(blogs))
-      .catch((err) => res.status(400).json({ error: err }));
-  } else {
-    Blog.find({ user_id })
-      .then((blogs) => res.json(blogs))
-      .catch((err) => res.status(400).json({ error: err }));
-  }
+  Blog.find({ user_id })
+    .sort({ createdAt: -1 })
+    .then((blogs) => res.json(blogs))
+    .catch((err) => res.status(400).json({ error: err }));
 });
 
 router.post("/", uploads.single("image"), (req, res) => {
@@ -57,12 +64,6 @@ router.post("/", uploads.single("image"), (req, res) => {
       })
     )
     .catch((err) => res.status(400).json({ error: err, req: req }));
-});
-
-router.get("/:id", (req, res) => {
-  Blog.findById(req.params.id)
-    .then((blog) => res.json(blog))
-    .catch((err) => res.status(400).json({ msg: "Blog Not Found" }));
 });
 
 router.delete("/", (req, res) => {
